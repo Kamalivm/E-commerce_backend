@@ -27,7 +27,7 @@ const createOrder = async (req, res) => {
     for (const item of cart.products) {
       console.log("Processing cart item:", item);
 
-      const product = await Product.findOne({ id: item.product_id });
+      const product = await Product.findById({ id: item.product_id });
       if (!product) {
         console.log(`Product with ID ${item.product_id} not found`);
         return res.status(404).json({ message: `Product with ID ${item.product_id} not found` });
@@ -64,42 +64,76 @@ const createOrder = async (req, res) => {
   }
 };
 
-const getOrder = async (req, res) =>{
+const getOrder = async (req, res) => {
   try {
-    console.log(req.body)
     const userId = req.user.id;
-    const Orders = await Order.findOne({userId});
-    if(Orders){
-      const productArray = [];
-      for (const i of orders.products) {
-        const product = await Product.findOne({ id: i.product_id });
-        if(product){
-          productArray.push({
-            title : product.title,
-            description : product.description,
-            price : product.price,
-            categories : product.categories,
-            image : product.image,
-            quantity : i.quantity,
-          })
-        }
-      }
-      res.status(200).send({
-        OrderId : Orders.id,
-        OrderDate : Orders.orderdate,
-        DeliveryDate : Orders.deliverydate,
-        TotalAmount : Orders.totalamount,
-        OrderStatus : Orders.orderstatus,
-        Products : productArray
-      })
-      
-    }else{
-      res.status(404).send({ message: "Order not found" });
-    }
-  }
-  catch(err){
-    res.status(500).json({error:"Internal Server Error"})
-  }
-}
+    const orders = await Order.find({ user_id: userId });
 
-module.exports = { createOrder , getOrder };
+    if (!orders || orders.length === 0) {
+      return res.status(404).json({ message: "Orders not found" });
+    }
+
+    let orderDetails = [];
+    for (const ord of orders) {
+      let subtotal = 0;
+      let products = [];
+
+      // Check if ord.products is a JSON string that needs parsing
+      let productsList;
+      if (typeof ord.products === 'string') {
+        productsList = JSON.parse(ord.products);
+      } else {
+        productsList = ord.products;
+      }
+
+      // Log productsList to ensure it's being parsed correctly
+      console.log('Parsed Products List:', productsList);
+
+      for (const prod of productsList) {
+        // Extracting the correct product ID field
+        const productId = prod.product_id || prod.product_id || prod.id;
+
+        if (!productId) {
+          console.log(`Product ID is undefined for product:`, prod);
+          continue;
+        }
+
+        const product = await Product.findOne({ id: productId });
+        if (!product) {
+          console.log(`Product with ID ${productId} not found`);
+          continue;
+        }
+
+        const productQuantity = parseInt(prod.quantity, 10) || 0;
+        const productTotal = product.price * productQuantity;
+        subtotal += productTotal;
+
+        products.push({
+          product_title: product.title,
+          product_price: product.price,
+          product_image: product.image,
+          product_desc: product.description,
+          product_quantity: productQuantity,
+        });
+      }
+
+      orderDetails.push({
+        order_id: ord._id,
+        products,
+        order_date: ord.orderdate,
+        est_date: ord.deliverydate,
+        subtotal,
+        order_status: ord.orderstatus,
+      });
+    }
+
+    res.json(orderDetails);
+  } catch (error) {
+    console.error("Error fetching orders:", error);
+    res.status(500).json({ message: "Failed to fetch orders" });
+  }
+};
+
+
+
+module.exports = { createOrder, getOrder };
