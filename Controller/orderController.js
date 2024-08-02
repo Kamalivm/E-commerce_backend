@@ -65,6 +65,9 @@ const createOrder = async (req, res) => {
 };
 
 const getOrder = async (req, res) =>{
-  const {} = req.body;
+  const userId = req.user.id;
+  const orders = await Order.findOne({userId});
+  
+
 }
 module.exports = { createOrder };
