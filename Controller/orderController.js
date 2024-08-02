@@ -27,7 +27,7 @@ const createOrder = async (req, res) => {
     for (const item of cart.products) {
       console.log("Processing cart item:", item);
 
-       const product = await Product.findOne({ id: item.product_id });
+      const product = await Product.findOne({ id: item.product_id });
       if (!product) {
         console.log(`Product with ID ${item.product_id} not found`);
         return res.status(404).json({ message: `Product with ID ${item.product_id} not found` });
@@ -65,9 +65,41 @@ const createOrder = async (req, res) => {
 };
 
 const getOrder = async (req, res) =>{
-  const userId = req.user.id;
-  const orders = await Order.findOne({userId});
-  
-
+  try {
+    console.log(req.body)
+    const userId = req.user.id;
+    const Orders = await Order.findOne({userId});
+    if(Orders){
+      const productArray = [];
+      for (const i of orders.products) {
+        const product = await Product.findOne({ id: i.product_id });
+        if(product){
+          productArray.push({
+            title : product.title,
+            description : product.description,
+            price : product.price,
+            categories : product.categories,
+            image : product.image,
+            quantity : i.quantity,
+          })
+        }
+      }
+      res.status(200).send({
+        OrderId : Orders.id,
+        OrderDate : Orders.orderdate,
+        DeliveryDate : Orders.deliverydate,
+        TotalAmount : Orders.totalamount,
+        OrderStatus : Orders.orderstatus,
+        Products : productArray
+      })
+      
+    }else{
+      res.status(404).send({ message: "Order not found" });
+    }
+  }
+  catch(err){
+    res.status(500).json({error:"Internal Server Error"})
+  }
 }
-module.exports = { createOrder };
+
+module.exports = { createOrder , getOrder };
