@@ -1,0 +1,8 @@
+const express=require("express");
+const Router=express.Router();
+const orderController=require("../Controller/orderController");
+const auth = require('../Middleware/auth');
+
+Router.post('/createOrder', auth,orderController.createOrder);
+
+module.exports=Router;
