@@ -23,11 +23,11 @@ const addCart=async(req,res)=>{
                 incart.products.push({product_id:productid,quantity:quantity });
             }
             await incart.save();
-            res.send(incart);
+            res.send({"messsage" : "Cart is added"});
         }else{
-                const add=new Cart({user_id:userId,Products:[{product_id:productid,quantity:quantity}]});
-                await add.save();
-                res.send(add);
+            const add=new Cart({user_id:userId,Products:[{product_id:productid,quantity:quantity}]});
+            await add.save();
+            res.send(add);
         }
     }
     catch(err){
@@ -57,7 +57,7 @@ const getCart = async (req, res) => {
       }
   } catch (err) {
       console.log(err);
-      res.status(500).send({ message: "Internal server error" });
+      res.status(500).send({ message: "Internal server error"});
   }
 };
 
@@ -107,7 +107,4 @@ const deleteCart = async (req, res) => {
   }
 };
 
-// const deleteProduct=async(req,res)=>{
-//     await CartService.deleteProduct(req.user,req.body.productId)
-// }
  module.exports = {addCart,getCart,deleteCart};
